@@ -112,7 +112,7 @@ def get_args_parser():
 
     # evalutaion options
     parser.add_argument('--eval_set', default='test', type=str)
-    parser.add_argument('--eval_model', default='', type=str)
+    parser.add_argument('--eval_model', default='/hy-tmp/zty/VG/EEVG-main/outputs/mixed_coco_decoder_ViTDet_best_mask_checkpoint.pth', type=str)
 
     return parser
 
@@ -155,8 +155,8 @@ def main(args):
     data_loader_test = DataLoader(dataset_test, args.batch_size, sampler=sampler_test,
                                   drop_last=False, collate_fn=utils.collate_fn, num_workers=args.num_workers)
 
-    # checkpoint = torch.load(args.eval_model, map_location='cpu')
-    # model_without_ddp.load_state_dict(checkpoint['model'])
+    checkpoint = torch.load(args.eval_model, map_location='cpu')
+    model_without_ddp.load_state_dict(checkpoint['model'], strict=False)
 
     # output log
     output_dir = Path(args.output_dir)
@@ -170,55 +170,29 @@ def main(args):
     results = []
     for _, batch in enumerate(tqdm(data_loader_test)):
         img_data, text_data, target = batch
-        batch_size = img_data.tensors.size(0)
 
         # copy to GPU
         img_data = img_data.to(device)
         text_data = text_data.to(device)
-        output = model(img_data, text_data)
+        with torch.no_grad():
+            output = model(img_data, text_data)
 
-        pred_box_list.append(output.cpu())
-        # # 保存图片
-        # x, y, w, h = output[0]
-        # new_x, new_y, new_w, new_h = (
-        # int(640 * x - 0.5 * 640 * w), int(640 * y - 0.5 * 640 * h), int(640 * w), int(640 * h))
-        # # print(data_loader_test.dataset.images[_][2])
-        # # print(data_loader_test.dataset.images[_][0])
-        # # print(new_x, new_y, new_w, new_h)
-        # result = {
-        #     "image_path": data_loader_test.dataset.images[_][2].replace('/', '\\'),  # 按照你提供的输出保持反斜杠
-        #     "question": data_loader_test.dataset.images[_][0],
-        #     "result": [
-        #         [float(new_x), float(new_y)],
-        #         [float(new_w), float(new_h)]
-        #     ]
-        # }
-        # results.append(result)
-        # # 保存到 JSON 文件
-        # with open('EEVG_predictions.json', 'w', encoding='utf-8') as f:
-        #     json.dump(results, f, indent=2)
-        plt.clf()
-        # 保存图片
-        image = img_data.tensors[0].permute(1, 2, 0).cpu().numpy()
-        image = image * [0.229, 0.224, 0.225] + [0.485, 0.456, 0.406]
         x, y, w, h = output[0]
-        plt.gca().add_patch(
-            plt.Rectangle((int(640 * x - 0.5 * 640 * w), int(640 * y - 0.5 * 640 * h)), int(640 * w), int(640 * h),
-                          color='g', fill=False, linewidth=4))
-
-        plt.axis('off')  # 去坐标轴
-        plt.xticks([])  # 去刻度
-        plt.yticks([])
-        plt.imshow(image)  # 绘制图像，将CV的BGR换成RGB
-        # plt.show()  # 显示图像
-        text_query = data_loader_test.dataset.images[_][2]
-        plt.savefig('../TransVG-main/vis_results/val_{}.png'.format(str(_) + text_query), dpi=800,
-                    bbox_inches='tight', pad_inches=0)
-        plt.clf()
-        # plt.imshow(image)
-        # plt.show()  # 显示图片
-        if _ > 10:
-            exit()
+        new_x, new_y, new_w, new_h = (
+        int(448 * x - 0.5 * 448 * w), int(448 * y - 0.5 * 448 * h), int(448 * w), int(448 * h))
+        result = {
+            "image_path": data_loader_test.dataset.images[_][0].replace('/', '\\'),  # 按照你提供的输出保持反斜杠
+            "question": data_loader_test.dataset.images[_][2],
+            "result": [
+                [float(new_x), float(new_y)],
+                [float(new_w), float(new_h)]
+            ]
+        }
+        print(result)
+        results.append(result)
+        # 保存到 JSON 文件
+    with open('EEVG_predictions.json', 'w', encoding='utf-8') as f:
+        json.dump(results, f, indent=2)
 
 
 if __name__ == '__main__':

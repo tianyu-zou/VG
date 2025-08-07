@@ -164,7 +164,7 @@ def main(args):
         # 保存图片
         x, y, w, h = output[0]
         new_x, new_y, new_w, new_h = (
-        int(640 * x - 0.5 * 640 * w), int(640 * y - 0.5 * 640 * h), int(640 * w), int(640 * h))
+        int(224 * x - 0.5 * 224 * w), int(224 * y - 0.5 * 224 * h), int(224 * w), int(224 * h))
         # print(data_loader_test.dataset.images[_][2])
         # print(data_loader_test.dataset.images[_][0])
         # print(new_x, new_y, new_w, new_h)

@@ -7,10 +7,10 @@ import os.path as osp
 # 输出 JSON 数据
 from tqdm import tqdm
 
-with open('CLIP-VG-master/CLIP_VG_predictions.json', 'r', encoding='utf-8') as f:
+with open('EEVG-main/EEVG_predictions.json', 'r', encoding='utf-8') as f:
     data = json.load(f)
 # imsize是当前模型的imsize,VLTVG=TransVG=640,ClIPVG=224,EEVG=448
-imsize = 224
+imsize = 448
 
 # 输出目录
 output_dir = "output_images"
@@ -86,5 +86,5 @@ for _, item in enumerate(tqdm(data)):
     save_results.append(save_result)
 
 print(f"所有box已经适配到原始图片大小")
-with open('CLIP_VG_predictions.json', 'w', encoding='utf-8') as f:
+with open('EEVG_predictions.json', 'w', encoding='utf-8') as f:
     json.dump(save_results, f, indent=2)
